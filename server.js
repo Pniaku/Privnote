@@ -33,14 +33,13 @@ app.use((req, res, next) => {
   next();
 });
 
-// Use dynamic import for nanoid (ESM only)
+// --- nanoid dynamic import fix for ESM ---
 let nanoid;
 (async () => {
   const { nanoid: _nanoid } = await import('nanoid');
   nanoid = _nanoid;
 })();
-
-function awaitNanoid(len) {
+function getNanoid(len) {
   if (!nanoid) throw new Error('nanoid not loaded');
   return nanoid(len);
 }
@@ -53,7 +52,7 @@ app.post('/api/note', upload.single('file'), async (req, res) => {
   const expiry = req.body.expiry || '1d';
   let id;
   try {
-    id = await awaitNanoid(10);
+    id = await getNanoid(10);
   } catch (e) {
     return res.status(500).json({ error: 'ID generation error' });
   }
