@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privpost.com</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #181c24;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      color: #f5f6fa;
+    }
+    .navbar {
+      width: 100%;
+      background: #23283a;
+      padding: 0.7rem 0;
+      box-shadow: 0 2px 8px #0003;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .navbar-title {
+      font-family: 'Orbitron', Arial, sans-serif;
+      font-size: 2rem;
+      color: #f1c40f;
+      letter-spacing: 2px;
+      text-shadow: 0 2px 8px #0008;
+      user-select: none;
+    }
+    .container {
+      max-width: 500px;
+      margin: 48px auto 0 auto;
+      background: #23283a;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px #0005;
+      padding: 40px 24px 32px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h2 {
+      text-align: center;
+      color: #f1c40f;
+      margin-bottom: 24px;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+    form {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      margin-bottom: 18px;
+      padding: 12px;
+      font-size: 1.1rem;
+      border-radius: 6px;
+      border: none;
+      background: #181c24;
+      color: #f5f6fa;
+      resize: vertical;
+      box-shadow: 0 1px 4px #0002;
+      transition: box-shadow 0.2s;
+      display: block;
+      box-sizing: border-box;
+    }
+    textarea:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px #f1c40f99;
+    }
+    button {
+      width: 100%;
+      background: linear-gradient(90deg, #f1c40f 60%, #e67e22 100%);
+      color: #23283a;
+      border: none;
+      padding: 14px 0;
+      border-radius: 6px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      box-shadow: 0 2px 8px #0002;
+      margin-bottom: 8px;
+      display: block;
+      box-sizing: border-box;
+    }
+    button:hover {
+      background: linear-gradient(90deg, #e67e22 60%, #f1c40f 100%);
+      color: #fff;
+    }
+    .note-link {
+      margin-top: 18px;
+      background: #1e272e;
+      padding: 16px;
+      border-radius: 6px;
+      word-break: break-all;
+      color: #f1c40f;
+      font-size: 1.05rem;
+      box-shadow: 0 1px 6px #0003;
+      text-align: center;
+    }
+    .note-link a {
+      color: #f1c40f;
+      text-decoration: underline;
+      font-weight: bold;
+    }
+    .note-content {
+      background: #273c75;
+      padding: 20px;
+      border-radius: 6px;
+      margin-top: 20px;
+      color: #f5f6fa;
+      font-size: 1.1rem;
+      box-shadow: 0 1px 6px #0003;
+      text-align: center;
+    }
+    .error {
+      color: #e74c3c;
+      margin-top: 18px;
+      text-align: center;
+    }
+    @media (max-width: 600px) {
+      .container {
+        max-width: 98vw;
+        margin: 24px 1vw 0 1vw;
+        padding: 20px 4vw 16px 4vw;
+      }
+      .navbar-title {
+        font-size: 1.3rem;
+      }
+      h2 {
+        font-size: 1.1rem;
+      }
+      textarea {
+        font-size: 1rem;
+      }
+      button {
+        font-size: 1rem;
+        padding: 12px 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="navbar">
+    <span class="navbar-title" id="navbarTitle" style="cursor:pointer;">privpost.online</span>
+  </div>
+  <div class="container" id="main">
+    <h2>Create a one-time note</h2>
+    <form id="noteForm" enctype="multipart/form-data">
+      <textarea id="noteText" placeholder="Type your note here..."></textarea>
+      <input type="file" id="fileInput" name="file" accept="image/*,.txt" style="margin-bottom:12px; color:#f5f6fa;" />
+      <select id="expirySelect" name="expiry" style="width:100%;margin-bottom:16px;padding:8px;border-radius:6px;background:#181c24;color:#f5f6fa;border:none;">
+        <option value="1d" selected>Expires in 1 day (default)</option>
+        <option value="1h">Expires in 1 hour</option>
+        <option value="7d">Expires in 7 days</option>
+      </select>
+      <button type="submit">Create note</button>
+    </form>
+    <div id="result"></div>
+    <div id="toast" style="display:none;position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:#23283a;color:#f1c40f;padding:16px 32px;border-radius:8px;box-shadow:0 2px 8px #000a;font-weight:bold;z-index:1000;transition:opacity 0.3s;opacity:0;"></div>
+  </div>
+  <script>
+    const form = document.getElementById('noteForm');
+    const noteText = document.getElementById('noteText');
+    const result = document.getElementById('result');
+    const fileInput = document.getElementById('fileInput');
+
+    function showToast(msg, color = '#f1c40f') {
+      const toast = document.getElementById('toast');
+      if (!toast) return; // Defensive: do nothing if toast element is missing
+      toast.textContent = msg;
+      toast.style.background = '#23283a';
+      toast.style.color = color;
+      toast.style.display = 'block';
+      toast.style.opacity = '1';
+      setTimeout(() => { toast.style.opacity = '0'; setTimeout(()=>{toast.style.display='none';}, 400); }, 2000);
+    }
+
+    // Click on domain name redirects to homepage
+    document.getElementById('navbarTitle').onclick = function() {
+      window.location.href = '/';
+    };
+
+    form && form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = new FormData();
+      formData.append('text', noteText.value);
+      formData.append('expiry', document.getElementById('expirySelect').value);
+      if (fileInput.files[0]) {
+        formData.append('file', fileInput.files[0]);
+      }
+      fetch('/api/note', {
+        method: 'POST',
+        body: formData
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.url) {
+          const fullUrl = window.location.origin + data.url;
+          result.innerHTML = `<div class='note-link'>
+            <span id='copyLinkBtn' style='cursor:pointer;background:#f1c40f;color:#23283a;padding:6px 16px;border-radius:4px;font-weight:bold;display:inline-block;margin-bottom:8px;'>Copy link</span><br>
+            Copy this link and send it to the recipient: <br><a href='${data.url}'>${fullUrl}</a></div>`;
+          form.style.display = 'none';
+          document.getElementById('copyLinkBtn').onclick = function() {
+            navigator.clipboard.writeText(fullUrl).then(()=>showToast('Link copied!','#2ecc40'),()=>showToast('Copy failed','#e74c3c'));
+          };
+          showToast('Note created!','#2ecc40');
+        } else {
+          showToast(data.error || 'An error occurred.','#e74c3c');
+        }
+      })
+      .catch(()=>showToast('An error occurred.','#e74c3c'));
+    });
+
+    // Check if we are on a note URL
+    const path = window.location.pathname;
+    if (path.startsWith('/note/')) {
+      document.getElementById('main').innerHTML = '<h2>Loading note...</h2>';
+      fetch(`/api/note/${path.split('/').pop()}`)
+        .then(r => r.json())
+        .then(data => {
+          console.log('API response:', data);
+          if (!data.error) {
+            let fileHtml = '';
+            if (data.file) {
+              if (data.file.mimetype && data.file.mimetype.startsWith('image/')) {
+                fileHtml = `<div style='margin-top:18px;text-align:center;'><img src='data:${data.file.mimetype};base64,${data.file.buffer}' alt='attachment' style='max-width:100%;border-radius:8px;box-shadow:0 1px 6px #0003;'/><br><a href='data:${data.file.mimetype};base64,${data.file.buffer}' download='${data.file.originalname}' style='color:#f1c40f;font-weight:bold;'>Download image</a></div>`;
+              } else {
+                fileHtml = `<div style='margin-top:18px;text-align:center;'><a href='data:${data.file.mimetype};base64,${data.file.buffer}' download='${data.file.originalname}' style='color:#f1c40f;font-weight:bold;'>Download attachment: ${data.file.originalname}</a></div>`;
+              }
+            }
+            document.getElementById('main').innerHTML = `<h2>Note:</h2><div class='note-content'>${data.text ? data.text : ''}</div>${fileHtml}<p><b>This note has now been destroyed.</b></p>`;
+            showToast('Note loaded!','#2ecc40');
+          } else {
+            document.getElementById('main').innerHTML = `<h2>Error</h2><div class='error'>${data.error}</div>`;
+            showToast(data.error,'#e74c3c');
+          }
+        })
+        .catch(()=>{
+          document.getElementById('main').innerHTML = `<h2>Error</h2><div class='error'>An error occurred.</div>`;
+          showToast('An error occurred.','#e74c3c');
+        });
+    }
+  </script>
+</body>
+</html>
