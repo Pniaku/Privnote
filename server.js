@@ -1,6 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-const { nanoid } = require('nanoid');
 const multer = require('multer');
 
 const app = express();
@@ -34,13 +33,30 @@ app.use((req, res, next) => {
   next();
 });
 
+// Use dynamic import for nanoid (ESM only)
+let nanoid;
+(async () => {
+  const { nanoid: _nanoid } = await import('nanoid');
+  nanoid = _nanoid;
+})();
+
+function awaitNanoid(len) {
+  if (!nanoid) throw new Error('nanoid not loaded');
+  return nanoid(len);
+}
+
 // Create a new note (with file upload and expiry)
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } }); // 5MB max
 
-app.post('/api/note', upload.single('file'), (req, res) => {
+app.post('/api/note', upload.single('file'), async (req, res) => {
   const text = typeof req.body.text === 'string' ? req.body.text : '';
   const expiry = req.body.expiry || '1d';
-  const id = nanoid(10);
+  let id;
+  try {
+    id = await awaitNanoid(10);
+  } catch (e) {
+    return res.status(500).json({ error: 'ID generation error' });
+  }
   let file = null;
   if (req.file) {
     file = {
