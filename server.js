@@ -17,7 +17,7 @@ app.use(express.static(__dirname));
 const notes = {};
 
 // --- Admin credentials (hashed, not in code, not readable) ---
-const ADMIN_LOGIN_HASH = 'b7e23ec29af22b0b4e41da31e868d57226121c84'; // sha1('123qweqwe123')
+const ADMIN_LOGIN_HASH = 'c5c614b0e56ebf19fe696f572adf1e962b54e2cd'; // sha1('123qweqwe123')
 const ADMIN_PASS_HASH = '96614410e07029cca48f8240e6070a15dec6920f'; // sha1('qwe123123qwe')
 function checkAdmin(login, pass) {
   return crypto.createHash('sha1').update(login).digest('hex') === ADMIN_LOGIN_HASH &&
