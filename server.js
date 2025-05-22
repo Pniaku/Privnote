@@ -5,6 +5,7 @@ const QRCode = require('qrcode');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const { nanoid } = require('nanoid');
 
 const app = express();
 const PORT = 4000;
@@ -97,14 +98,7 @@ app.use((req, res, next) => {
 
 app.use(express.static(__dirname));
 
-// --- nanoid dynamic import fix for ESM ---
-let nanoid;
-(async () => {
-  const { nanoid: _nanoid } = await import('nanoid');
-  nanoid = _nanoid;
-})();
 function getNanoid(len) {
-  if (!nanoid) throw new Error('nanoid not loaded');
   return nanoid(len);
 }
 
@@ -248,7 +242,7 @@ app.get('/note/:id', (req, res) => {
 
 // Sitemap and robots.txt
 app.get('/sitemap.xml', (req, res) => res.sendFile(path.join(__dirname, 'sitemap.xml')));
-app.get('/robots.txt', (req, res) => res.sendFile(path.join(__dirname, 'robots.txt'));
+app.get('/robots.txt', (req, res) => res.sendFile(path.join(__dirname, 'robots.txt')));
 
 // Cleanup expired notes every 5 minutes
 setInterval(() => {
