@@ -81,12 +81,12 @@ function getExpiryDate(option) {
   }
 }
 
-// Middleware: zliczaj wejścia na stronę główną i podstrony SEO (GET /, /index.html, /about, /faq, /privacy, /terms, /contact), nie adminpanel
+// Middleware: zliczaj wejścia na stronę główną i podstrony SEO (GET /, /index.html, /about, /about.html, ...), nie adminpanel
 app.use((req, res, next) => {
-  const seoPages = ['/', '/index.html', '/about', '/faq', '/privacy', '/terms', '/contact'];
+  const seoBase = ['/', '/index', '/about', '/faq', '/privacy', '/terms', '/contact'];
   if (
     req.method === 'GET' &&
-    seoPages.includes(req.path) &&
+    seoBase.some(base => req.path === base || req.path === base + '.html') &&
     !req.path.startsWith('/adminpanel') &&
     !req.path.startsWith('/api/admin')
   ) {
