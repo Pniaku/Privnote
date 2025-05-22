@@ -24,13 +24,36 @@ function checkAdmin(login, pass) {
 }
 
 // --- Stats ---
-const stats = {
+const STATS_FILE = path.join(__dirname, 'stats.json');
+let stats = {
   visits: [], // {date: 'YYYY-MM-DD', count: N}
   notesCreated: 0,
   notesDestroyed: 0,
   notesExpired: 0
 };
-
+// Wczytaj statystyki z pliku przy starcie
+try {
+  if (fs.existsSync(STATS_FILE)) {
+    const raw = fs.readFileSync(STATS_FILE, 'utf8');
+    if (raw && raw.trim().length > 0) {
+      stats = JSON.parse(raw);
+    } else {
+      // Plik pusty, nadpisz domyślnymi statystykami
+      fs.writeFileSync(STATS_FILE, JSON.stringify(stats));
+    }
+  }
+} catch (e) {
+  console.error('Błąd wczytywania statystyk:', e);
+  // Nadpisz plik domyślnymi statystykami jeśli błąd
+  try { fs.writeFileSync(STATS_FILE, JSON.stringify(stats)); } catch (e2) {}
+}
+function saveStats() {
+  try {
+    fs.writeFileSync(STATS_FILE, JSON.stringify(stats));
+  } catch (e) {
+    console.error('Błąd zapisu statystyk:', e);
+  }
+}
 function addVisit() {
   const today = new Date().toISOString().slice(0, 10);
   let entry = stats.visits.find(v => v.date === today);
@@ -41,6 +64,7 @@ function addVisit() {
     stats.visits = stats.visits.slice(-14);
   }
   entry.count++;
+  saveStats();
 }
 
 // Helper: parse expiry
@@ -60,7 +84,10 @@ function getExpiryDate(option) {
 
 // Middleware: log every request
 app.use((req, res, next) => {
-  if (req.path === '/' || req.path === '/index.html' || req.path === '/note' || req.path.startsWith('/note/')) {
+  if (
+    req.method === 'GET' &&
+    (req.path === '/' || req.path === '/index.html')
+  ) {
     addVisit();
   }
   next();
@@ -129,6 +156,7 @@ app.post('/api/note', upload.single('file'), async (req, res) => {
   const qr = await QRCode.toDataURL(fullUrl);
   console.log('Note created:', { id, text, file: file ? { ...file, buffer: '[base64]' } : null, burnAfterViews });
   stats.notesCreated++;
+  saveStats();
   res.json({ url, qr });
 });
 
@@ -164,6 +192,7 @@ app.post('/api/note/:id/view', (req, res) => {
     delete notes[id];
     response.destroyed = true;
     stats.notesDestroyed++;
+    saveStats();
   }
   res.json(response);
 });
@@ -195,6 +224,7 @@ setInterval(() => {
     if (isNaN(expires.getTime()) || expires < now) {
       delete notes[id];
       stats.notesExpired++;
+      saveStats();
     }
   }
 }, 5 * 60 * 1000);
