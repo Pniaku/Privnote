@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>404 Not Found - Privpost.online</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
+  <style>html{overflow-x:hidden;}body{background:#181c24;color:#f5f6fa;font-family:Arial,sans-serif;margin:0;padding:0;overflow-x:hidden;} .navbar{width:100%;background:#23283a;padding:0.7rem 0;box-shadow:0 2px 8px #0003;display:flex;align-items:center;justify-content:center;position:sticky;top:0;z-index:10;} .navbar-title{font-family:'Orbitron',Arial,sans-serif;font-size:2rem;color:#f1c40f;letter-spacing:2px;text-shadow:0 2px 8px #0008;user-select:none;cursor:pointer;} .container{max-width:700px;margin:48px auto 0 auto;background:#23283a;border-radius:12px;box-shadow:0 4px 24px #0005;padding:40px 24px 32px 24px;box-sizing:border-box;text-align:center;} h1{color:#f1c40f;text-align:center;} .error-msg{color:#e74c3c;font-size:1.3rem;margin:32px 0 18px 0;} a{color:#f1c40f;} @media(max-width:600px){.container{max-width:98vw;margin:24px 1vw 0 1vw;padding:20px 4vw 16px 4vw;}.navbar-title{font-size:1.3rem;}}</style>
+</head>
+<body>
+  <div class="navbar">
+    <span class="navbar-title" id="navbarTitle">privpost.online</span>
+  </div>
+  <div class="container">
+    <h1>404 – Page Not Found</h1>
+    <div class="error-msg">The address <span style="color:#f1c40f;word-break:break-all;">{URL}</span> does not exist.<br>Please check the link or return to the <a href="/">homepage</a>.</div>
+  </div>
+  <footer style="width:100%;background:#23283a;color:#f1c40f;text-align:center;padding:24px 8px 16px 8px;font-size:1rem;margin-top:40px;letter-spacing:0.2px;">
+    <div style="max-width:600px;margin:0 auto;">
+      <b>Privpost.online</b> is a free tool for sending confidential, one-time notes and files. Your message or attachment is destroyed after being read, ensuring maximum privacy. Perfect for sharing passwords, private links, or sensitive documents. No registration required – just create, send, and let your secret vanish!
+    </div>
+    <div style="margin-top:18px;font-size:0.98rem;">
+      <a href="about.html" style="color:#f1c40f;margin:0 10px;">About</a>|
+      <a href="faq.html" style="color:#f1c40f;margin:0 10px;">FAQ</a>|
+      <a href="privacy.html" style="color:#f1c40f;margin:0 10px;">Privacy Policy</a>|
+      <a href="terms.html" style="color:#f1c40f;margin:0 10px;">Terms</a>|
+      <a href="contact.html" style="color:#f1c40f;margin:0 10px;">Contact</a>
+    </div>
+  </footer>
+  <script>document.getElementById('navbarTitle').onclick=function(){window.location.href='/';};
+  // Wstaw aktualny adres URL
+  document.querySelector('.error-msg span').textContent = window.location.pathname;
+  </script>
+</body>
+</html>
