@@ -147,6 +147,11 @@ app.get('/api/note/:id/qr', async (req, res) => {
   }
 });
 
+// Serve index.html for /note/:id (so frontend SPA can handle the route)
+app.get('/note/:id', (req, res) => {
+  res.sendFile(__dirname + '/index.html');
+});
+
 // Cleanup expired notes every 5 minutes
 setInterval(() => {
   const now = new Date();
