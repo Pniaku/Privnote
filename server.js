@@ -84,10 +84,8 @@ function getExpiryDate(option) {
 
 // Middleware: log every request
 app.use((req, res, next) => {
-  if (
-    req.method === 'GET' &&
-    (req.path === '/' || req.path === '/index.html')
-  ) {
+  // Zliczaj każde wejście GET na dowolną stronę HTML (w tym SPA)
+  if (req.method === 'GET' && req.headers.accept && req.headers.accept.includes('text/html')) {
     addVisit();
   }
   next();
