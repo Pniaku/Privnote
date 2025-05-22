@@ -60,8 +60,9 @@ function getExpiryDate(option) {
 
 // Middleware: log every request
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-  if (req.path === '/' || req.path === '/index.html') addVisit();
+  if (req.path === '/' || req.path === '/index.html' || req.path === '/note' || req.path.startsWith('/note/')) {
+    addVisit();
+  }
   next();
 });
 
