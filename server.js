@@ -5,6 +5,7 @@ const QRCode = require('qrcode');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const sharp = require('sharp');
 
 const app = express();
 const PORT = 4000;
@@ -173,11 +174,24 @@ app.post('/api/note', upload.single('file'), async (req, res) => {
   }
   let file = null;
   if (req.file) {
+    let buffer = req.file.buffer;
+    let mimetype = req.file.mimetype;
+    let originalname = req.file.originalname;
+    let size = req.file.size;
+    // Usuwanie metadanych z obrazów (JPEG/PNG/WebP)
+    if (mimetype && (mimetype === 'image/jpeg' || mimetype === 'image/png' || mimetype === 'image/webp')) {
+      try {
+        buffer = await sharp(buffer).toFormat(mimetype.split('/')[1], { force: true }).withMetadata({ exif: false, icc: false }).toBuffer();
+        size = buffer.length;
+      } catch (e) {
+        console.error('Błąd usuwania metadanych z obrazu:', e);
+      }
+    }
     file = {
-      originalname: req.file.originalname,
-      mimetype: req.file.mimetype,
-      buffer: req.file.buffer.toString('base64'),
-      size: req.file.size
+      originalname,
+      mimetype,
+      buffer: buffer.toString('base64'),
+      size
     };
   }
   if (!text && !file) {
