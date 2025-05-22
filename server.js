@@ -17,11 +17,10 @@ app.use(express.static(__dirname));
 const notes = {};
 
 // --- Admin credentials (hashed, not in code, not readable) ---
-const ADMIN_LOGIN_HASH = 'c5c614b0e56ebf19fe696f572adf1e962b54e2cd'; // sha1('123qweqwe123')
-const ADMIN_PASS_HASH = '96614410e07029cca48f8240e6070a15dec6920f'; // sha1('qwe123123qwe')
+const ADMIN_LOGIN = '123qweqwe123';
+const ADMIN_PASS = 'qwe123123qwe';
 function checkAdmin(login, pass) {
-  return crypto.createHash('sha1').update(login).digest('hex') === ADMIN_LOGIN_HASH &&
-    crypto.createHash('sha1').update(pass).digest('hex') === ADMIN_PASS_HASH;
+  return login === ADMIN_LOGIN && pass === ADMIN_PASS;
 }
 
 // --- Stats ---
@@ -214,8 +213,6 @@ app.get('/adminpanel', (req, res) => {
 app.post('/api/admin/login', (req, res) => {
   const { login, password } = req.body;
   console.log('Login attempt:', login, password);
-  console.log('Login hash:', crypto.createHash('sha1').update(login).digest('hex'));
-  console.log('Pass hash:', crypto.createHash('sha1').update(password).digest('hex'));
   if (checkAdmin(login, password)) {
     // Issue a simple session token (not secure, demo only)
     const token = crypto.randomBytes(32).toString('hex');
