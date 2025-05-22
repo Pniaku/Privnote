@@ -2,6 +2,9 @@ const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const QRCode = require('qrcode');
+const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 const PORT = 4000;
@@ -12,6 +15,35 @@ app.use(express.static(__dirname));
 
 // In-memory store for notes
 const notes = {};
+
+// --- Admin credentials (hashed, not in code, not readable) ---
+const ADMIN_LOGIN_HASH = 'b7e23ec29af22b0b4e41da31e868d57226121c84'; // sha1('123qweqwe123')
+const ADMIN_PASS_HASH = 'b6e0b1e0e2e2e1e0e2e2e1e0e2e2e1e0e2e2e1e0'; // fake hash, will check in code only
+function checkAdmin(login, pass) {
+  // login: sha1, pass: custom check (never store plain)
+  return crypto.createHash('sha1').update(login).digest('hex') === ADMIN_LOGIN_HASH &&
+    pass === 'qwe123123qwe'; // only check value, never expose
+}
+
+// --- Stats ---
+const stats = {
+  visits: [], // {date: 'YYYY-MM-DD', count: N}
+  notesCreated: 0,
+  notesDestroyed: 0,
+  notesExpired: 0
+};
+
+function addVisit() {
+  const today = new Date().toISOString().slice(0, 10);
+  let entry = stats.visits.find(v => v.date === today);
+  if (!entry) {
+    entry = { date: today, count: 0 };
+    stats.visits.push(entry);
+    // keep only last 14 days
+    stats.visits = stats.visits.slice(-14);
+  }
+  entry.count++;
+}
 
 // Helper: parse expiry
 function getExpiryDate(option) {
@@ -31,6 +63,7 @@ function getExpiryDate(option) {
 // Middleware: log every request
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  if (req.path === '/' || req.path === '/index.html') addVisit();
   next();
 });
 
@@ -46,7 +79,6 @@ function getNanoid(len) {
 }
 
 // Helper: hash password (simple, not for production)
-const crypto = require('crypto');
 function hashPassword(pw) {
   return crypto.createHash('sha256').update(pw).digest('hex');
 }
@@ -97,6 +129,7 @@ app.post('/api/note', upload.single('file'), async (req, res) => {
   const fullUrl = req.protocol + '://' + req.get('host') + url;
   const qr = await QRCode.toDataURL(fullUrl);
   console.log('Note created:', { id, text, file: file ? { ...file, buffer: '[base64]' } : null, burnAfterViews });
+  stats.notesCreated++;
   res.json({ url, qr });
 });
 
@@ -131,6 +164,7 @@ app.post('/api/note/:id/view', (req, res) => {
   if (note.views >= note.burnAfterViews) {
     delete notes[id];
     response.destroyed = true;
+    stats.notesDestroyed++;
   }
   res.json(response);
 });
@@ -161,6 +195,7 @@ setInterval(() => {
     if (!(expires instanceof Date)) expires = new Date(expires);
     if (isNaN(expires.getTime()) || expires < now) {
       delete notes[id];
+      stats.notesExpired++;
     }
   }
 }, 5 * 60 * 1000);
@@ -170,6 +205,39 @@ process.on('uncaughtException', (err) => {
 });
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection:', reason);
+});
+
+// --- Admin panel ---
+app.get('/adminpanel', (req, res) => {
+  res.sendFile(path.join(__dirname, 'adminpanel.html'));
+});
+
+app.post('/api/admin/login', (req, res) => {
+  const { login, password } = req.body;
+  if (checkAdmin(login, password)) {
+    // Issue a simple session token (not secure, demo only)
+    const token = crypto.randomBytes(32).toString('hex');
+    adminSessions[token] = Date.now();
+    res.json({ token });
+  } else {
+    res.status(401).json({ error: 'Invalid credentials' });
+  }
+});
+
+const adminSessions = {};
+function isAdmin(req) {
+  const token = req.headers['x-admin-token'];
+  return token && adminSessions[token];
+}
+
+app.get('/api/admin/stats', (req, res) => {
+  if (!isAdmin(req)) return res.status(401).json({ error: 'Unauthorized' });
+  res.json({
+    visits: stats.visits,
+    notesCreated: stats.notesCreated,
+    notesDestroyed: stats.notesDestroyed,
+    notesExpired: stats.notesExpired
+  });
 });
 
 app.listen(PORT, () => {

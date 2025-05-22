@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel - Privpost.online</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { background:#181c24; color:#f5f6fa; font-family:Arial,sans-serif; margin:0; min-height:100vh; }
+    .admin-container { max-width:600px; margin:48px auto; background:#23283a; border-radius:12px; box-shadow:0 4px 24px #0005; padding:40px 24px 32px 24px; }
+    h2 { color:#f1c40f; text-align:center; font-family:'Orbitron',Arial,sans-serif; }
+    .login-box { max-width:340px; margin:40px auto; background:#181c24; border-radius:8px; padding:32px 24px; box-shadow:0 2px 8px #0003; }
+    .login-box input { width:100%; margin-bottom:18px; padding:12px; border-radius:6px; border:none; background:#23283a; color:#f5f6fa; font-size:1.1rem; }
+    .login-box button { width:100%; background:linear-gradient(90deg,#f1c40f 60%,#e67e22 100%); color:#23283a; border:none; padding:14px 0; border-radius:6px; font-size:1.1rem; font-weight:bold; cursor:pointer; }
+    .stats-box { margin:32px 0 0 0; }
+    .stat { background:#181c24; border-radius:8px; margin:12px 0; padding:18px 16px; font-size:1.1rem; color:#f1c40f; box-shadow:0 1px 4px #0002; }
+    #chart { background:#fff; border-radius:8px; margin:24px 0 0 0; padding:12px; }
+    .logout-btn { float:right; background:none; border:none; color:#e74c3c; font-weight:bold; cursor:pointer; font-size:1rem; }
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <h2>Admin Panel</h2>
+    <div id="loginBox" class="login-box">
+      <input type="text" id="adminLogin" placeholder="Login" autocomplete="username">
+      <input type="password" id="adminPass" placeholder="Password" autocomplete="current-password">
+      <button onclick="adminLogin()">Log in</button>
+      <div id="loginError" style="color:#e74c3c;margin-top:10px;"></div>
+    </div>
+    <div id="statsBox" class="stats-box" style="display:none;">
+      <button class="logout-btn" onclick="logout()">Logout</button>
+      <div class="stat" id="statNotesCreated">Total notes created: ...</div>
+      <div class="stat" id="statNotesDestroyed">Notes opened & destroyed: ...</div>
+      <div class="stat" id="statNotesExpired">Notes expired (not opened): ...</div>
+      <div class="stat" id="statVisits">Total visits (last 7 days): ...</div>
+      <canvas id="chart" width="500" height="220"></canvas>
+    </div>
+  </div>
+  <script>
+    let adminToken = localStorage.getItem('adminToken') || '';
+    function adminLogin() {
+      const login = document.getElementById('adminLogin').value;
+      const password = document.getElementById('adminPass').value;
+      fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ login, password })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.token) {
+          adminToken = data.token;
+          localStorage.setItem('adminToken', adminToken);
+          showStats();
+        } else {
+          document.getElementById('loginError').textContent = data.error || 'Login failed';
+        }
+      })
+      .catch(()=>{ document.getElementById('loginError').textContent = 'Login failed'; });
+    }
+    function logout() {
+      adminToken = '';
+      localStorage.removeItem('adminToken');
+      document.getElementById('statsBox').style.display = 'none';
+      document.getElementById('loginBox').style.display = 'block';
+    }
+    function showStats() {
+      fetch('/api/admin/stats', { headers: { 'x-admin-token': adminToken } })
+        .then(r => r.json())
+        .then(data => {
+          if (data.error) {
+            logout();
+            return;
+          }
+          document.getElementById('loginBox').style.display = 'none';
+          document.getElementById('statsBox').style.display = 'block';
+          document.getElementById('statNotesCreated').textContent = 'Total notes created: ' + data.notesCreated;
+          document.getElementById('statNotesDestroyed').textContent = 'Notes opened & destroyed: ' + data.notesDestroyed;
+          document.getElementById('statNotesExpired').textContent = 'Notes expired (not opened): ' + data.notesExpired;
+          let visits7 = data.visits.slice(-7);
+          let totalVisits = visits7.reduce((a,v)=>a+v.count,0);
+          document.getElementById('statVisits').textContent = 'Total visits (last 7 days): ' + totalVisits;
+          renderChart(visits7);
+        });
+    }
+    function renderChart(visits) {
+      const ctx = document.getElementById('chart').getContext('2d');
+      if (window.chartObj) window.chartObj.destroy();
+      window.chartObj = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: visits.map(v=>v.date),
+          datasets: [{
+            label: 'Visits per day',
+            data: visits.map(v=>v.count),
+            backgroundColor: '#f1c40f',
+            borderRadius: 6
+          }]
+        },
+        options: {
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: '#23283a' }, ticks: { color: '#f5f6fa' } },
+            y: { grid: { color: '#23283a' }, ticks: { color: '#f5f6fa' }, beginAtZero:true }
+          }
+        }
+      });
+    }
+    if (adminToken) showStats();
+  </script>
+</body>
+</html>
