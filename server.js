@@ -246,6 +246,10 @@ app.get('/note/:id', (req, res) => {
   res.sendFile(__dirname + '/index.html');
 });
 
+// Sitemap and robots.txt
+app.get('/sitemap.xml', (req, res) => res.sendFile(path.join(__dirname, 'sitemap.xml')));
+app.get('/robots.txt', (req, res) => res.sendFile(path.join(__dirname, 'robots.txt'));
+
 // Cleanup expired notes every 5 minutes
 setInterval(() => {
   const now = new Date();

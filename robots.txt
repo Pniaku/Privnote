@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://privpost.online/sitemap.xml
