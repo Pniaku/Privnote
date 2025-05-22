@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
+const QRCode = require('qrcode');
 
 const app = express();
 const PORT = 4000;
@@ -44,12 +45,22 @@ function getNanoid(len) {
   return nanoid(len);
 }
 
-// Create a new note (with file upload and expiry)
+// Helper: hash password (simple, not for production)
+const crypto = require('crypto');
+function hashPassword(pw) {
+  return crypto.createHash('sha256').update(pw).digest('hex');
+}
+
+// Create a new note (with file upload, expiry, password, burn-after-views)
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } }); // 50MB max
 
 app.post('/api/note', upload.single('file'), async (req, res) => {
   const text = typeof req.body.text === 'string' ? req.body.text : '';
   const expiry = req.body.expiry || '1d';
+  const password = req.body.password ? req.body.password : null;
+  let burnAfterViews = parseInt(req.body.burnAfterViews || '1', 10);
+  if (isNaN(burnAfterViews) || burnAfterViews < 1) burnAfterViews = 1;
+  if (burnAfterViews > 10000) burnAfterViews = 10000;
   let id;
   try {
     id = await getNanoid(10);
@@ -76,15 +87,23 @@ app.post('/api/note', upload.single('file'), async (req, res) => {
   notes[id] = {
     text,
     file,
-    expires: getExpiryDate(expiry)
+    expires: getExpiryDate(expiry),
+    password: password ? hashPassword(password) : null,
+    burnAfterViews,
+    views: 0
   };
-  console.log('Note created:', { id, text, file: file ? { ...file, buffer: '[base64]' } : null });
-  res.json({ url: `/note/${id}` });
+  // Generate QR code for the note URL
+  const url = `/note/${id}`;
+  const fullUrl = req.protocol + '://' + req.get('host') + url;
+  const qr = await QRCode.toDataURL(fullUrl);
+  console.log('Note created:', { id, text, file: file ? { ...file, buffer: '[base64]' } : null, burnAfterViews });
+  res.json({ url, qr });
 });
 
-// Get and destroy a note (with file)
-app.get('/api/note/:id', (req, res) => {
+// Get and destroy a note (with file, password, burn-after-views, view counter)
+app.post('/api/note/:id/view', (req, res) => {
   const { id } = req.params;
+  const { password } = req.body;
   const note = notes[id];
   if (!note) {
     console.log('Note not found:', id);
@@ -97,19 +116,49 @@ app.get('/api/note/:id', (req, res) => {
     console.log('Note expired:', id);
     return res.status(410).json({ error: 'Note expired' });
   }
+  if (note.password) {
+    if (!password || hashPassword(password) !== note.password) {
+      return res.status(401).json({ error: 'Wrong password' });
+    }
+  }
+  note.views++;
   const response = {
     text: typeof note.text === 'string' ? note.text : '',
-    file: note.file ? note.file : null
+    file: note.file ? note.file : null,
+    views: note.views,
+    burnAfterViews: note.burnAfterViews
   };
-  delete notes[id];
-  console.log('Note returned:', { id, response });
+  if (note.views >= note.burnAfterViews) {
+    delete notes[id];
+    response.destroyed = true;
+  }
   res.json(response);
 });
 
-// Fallback: serve index.html for /note/:id so frontend can handle routing
-app.get('/note/:id', (req, res) => {
-  res.sendFile(__dirname + '/index.html');
+// QR code endpoint (optional, not needed if sent in /api/note)
+app.get('/api/note/:id/qr', async (req, res) => {
+  const { id } = req.params;
+  const url = req.protocol + '://' + req.get('host') + `/note/${id}`;
+  try {
+    const qr = await QRCode.toDataURL(url);
+    res.json({ qr });
+  } catch (e) {
+    res.status(500).json({ error: 'QR code error' });
+  }
 });
+
+// Cleanup expired notes every 5 minutes
+setInterval(() => {
+  const now = new Date();
+  for (const id in notes) {
+    const note = notes[id];
+    let expires = note.expires;
+    if (!(expires instanceof Date)) expires = new Date(expires);
+    if (isNaN(expires.getTime()) || expires < now) {
+      delete notes[id];
+    }
+  }
+}, 5 * 60 * 1000);
 
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err);

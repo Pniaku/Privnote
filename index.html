@@ -170,6 +170,9 @@
     <form id="noteForm" enctype="multipart/form-data">
       <textarea id="noteText" placeholder="Type your note here..." maxlength="50000"></textarea>
       <input type="file" id="fileInput" name="file" accept="image/*,.txt" style="margin-bottom:12px; color:#f5f6fa;" />
+      <input type="password" id="notePassword" name="password" placeholder="Optional password (for reading)" style="width:100%;margin-bottom:12px;padding:10px;border-radius:6px;background:#181c24;color:#f5f6fa;border:none;" />
+      <input type="number" id="burnAfterViews" name="burnAfterViews" min="1" max="10000" value="1" style="width:100%;margin-bottom:12px;padding:10px;border-radius:6px;background:#181c24;color:#f5f6fa;border:none;" />
+      <label for="burnAfterViews" style="color:#f1c40f;font-size:0.98rem;margin-bottom:8px;">Destroy after <span id="burnAfterViewsLabel">1</span> view(s) (max 10,000)</label>
       <select id="expirySelect" name="expiry" style="width:100%;margin-bottom:16px;padding:8px;border-radius:6px;background:#181c24;color:#f5f6fa;border:none;">
         <option value="1d" selected>Expires in 1 day (default)</option>
         <option value="1h">Expires in 1 hour</option>
@@ -190,6 +193,9 @@
     const noteText = document.getElementById('noteText');
     const result = document.getElementById('result');
     const fileInput = document.getElementById('fileInput');
+    const notePassword = document.getElementById('notePassword');
+    const burnAfterViews = document.getElementById('burnAfterViews');
+    const burnAfterViewsLabel = document.getElementById('burnAfterViewsLabel');
 
     function showToast(msg, color = '#f1c40f') {
       const toast = document.getElementById('toast');
@@ -217,9 +223,16 @@
         showToast('File exceeds 50MB limit', '#e74c3c');
         return;
       }
+      const burnAfterViews = document.getElementById('burnAfterViews').value;
+      if (burnAfterViews < 1 || burnAfterViews > 10000) {
+        showToast('Views must be between 1 and 10,000', '#e74c3c');
+        return;
+      }
       const formData = new FormData();
       formData.append('text', noteText.value);
       formData.append('expiry', document.getElementById('expirySelect').value);
+      formData.append('password', document.getElementById('notePassword').value);
+      formData.append('burnAfterViews', burnAfterViews);
       if (fileInput.files[0]) {
         formData.append('file', fileInput.files[0]);
       }
@@ -233,7 +246,7 @@
           const fullUrl = window.location.origin + data.url;
           result.innerHTML = `<div class='note-link'>
             <span id='copyLinkBtn' style='cursor:pointer;background:#f1c40f;color:#23283a;padding:6px 16px;border-radius:4px;font-weight:bold;display:inline-block;margin-bottom:8px;'>Copy link</span><br>
-            Copy this link and send it to the recipient: <br><a href='${data.url}'>${fullUrl}</a></div>`;
+            Copy this link and send it to the recipient: <br><a href='${data.url}'>${fullUrl}</a><br><br><img src='${data.qr}' alt='QR code' style='margin-top:10px;max-width:180px;background:#fff;padding:8px;border-radius:8px;'/></div>`;
           form.style.display = 'none';
           document.getElementById('copyLinkBtn').onclick = function() {
             navigator.clipboard.writeText(fullUrl).then(()=>showToast('Link copied!','#2ecc40'),()=>showToast('Copy failed','#e74c3c'));
@@ -246,14 +259,35 @@
       .catch(()=>showToast('An error occurred.','#e74c3c'));
     });
 
+    // Burn-after-views label update
+    const burnInput = document.getElementById('burnAfterViews');
+    const burnLabel = document.getElementById('burnAfterViewsLabel');
+    if (burnInput && burnLabel) {
+      burnInput.addEventListener('input', function() {
+        burnLabel.textContent = burnInput.value;
+      });
+    }
+
     // Check if we are on a note URL
     const path = window.location.pathname;
     if (path.startsWith('/note/')) {
       document.getElementById('main').innerHTML = '<h2>Loading note...</h2>';
-      fetch(`/api/note/${path.split('/').pop()}`)
+      // Password prompt if needed
+      let noteId = path.split('/').pop();
+      function fetchNote(password) {
+        fetch(`/api/note/${noteId}/view`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        })
         .then(r => r.json())
         .then(data => {
-          console.log('API response:', data);
+          if (data.error && data.error === 'Wrong password') {
+            const pw = prompt('This note is password protected. Enter password:');
+            if (pw !== null) fetchNote(pw);
+            else document.getElementById('main').innerHTML = `<h2>Error</h2><div class='error'>Password required.</div>`;
+            return;
+          }
           if (!data.error) {
             let fileHtml = '';
             if (data.file) {
@@ -263,7 +297,8 @@
                 fileHtml = `<div style='margin-top:18px;text-align:center;'><a href='data:${data.file.mimetype};base64,${data.file.buffer}' download='${data.file.originalname}' style='color:#f1c40f;font-weight:bold;'>Download attachment: ${data.file.originalname}</a></div>`;
               }
             }
-            document.getElementById('main').innerHTML = `<h2>Note:</h2><div class='note-content'>${data.text ? data.text : ''}</div>${fileHtml}<p><b>This note has now been destroyed.</b></p>`;
+            let destroyedMsg = data.destroyed ? '<p><b>This note has now been destroyed.</b></p>' : '';
+            document.getElementById('main').innerHTML = `<h2>Note:</h2><div class='note-content'>${data.text ? data.text : ''}</div>${fileHtml}<div style='margin-top:12px;color:#f1c40f;'>Views: ${data.views} / ${data.burnAfterViews}</div>${destroyedMsg}`;
             showToast('Note loaded!','#2ecc40');
           } else {
             document.getElementById('main').innerHTML = `<h2>Error</h2><div class='error'>${data.error}</div>`;
@@ -274,6 +309,8 @@
           document.getElementById('main').innerHTML = `<h2>Error</h2><div class='error'>An error occurred.</div>`;
           showToast('An error occurred.','#e74c3c');
         });
+      }
+      fetchNote();
     }
   </script>
 </body>
