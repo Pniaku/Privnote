@@ -113,10 +113,38 @@ function hashPassword(pw) {
   return crypto.createHash('sha256').update(pw).digest('hex');
 }
 
+// --- Limit notatek na IP (antyspam) ---
+const NOTE_LIMIT_PER_IP = 100;
+const NOTE_LIMIT_WINDOW_HOURS = 12;
+const ipNoteCounters = {};
+function cleanupIpCounters() {
+  const now = Date.now();
+  for (const ip in ipNoteCounters) {
+    if (now - ipNoteCounters[ip].start > NOTE_LIMIT_WINDOW_HOURS * 60 * 60 * 1000) {
+      delete ipNoteCounters[ip];
+    }
+  }
+}
+setInterval(cleanupIpCounters, 60 * 60 * 1000); // czyść co godzinę
+
 // Create a new note (with file upload, expiry, password, burn-after-views)
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } }); // 50MB max
 
 app.post('/api/note', upload.single('file'), async (req, res) => {
+  // Limit notatek na IP
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.connection.remoteAddress || req.ip;
+  let counter = ipNoteCounters[ip];
+  const now = Date.now();
+  if (!counter || now - counter.start > NOTE_LIMIT_WINDOW_HOURS * 60 * 60 * 1000) {
+    // resetuj licznik dla IP po 12h
+    counter = { count: 0, start: now };
+    ipNoteCounters[ip] = counter;
+  }
+  if (counter.count >= NOTE_LIMIT_PER_IP) {
+    return res.status(429).json({ error: `Note limit reached: max ${NOTE_LIMIT_PER_IP} notes per 12h per IP. Try again later.` });
+  }
+  counter.count++;
+
   const text = typeof req.body.text === 'string' ? req.body.text : '';
   const expiry = req.body.expiry || '1d';
   const password = req.body.password ? req.body.password : null;
