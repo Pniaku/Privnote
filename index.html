@@ -65,6 +65,19 @@
       flex-direction: column;
       align-items: center;
     }
+    input[type="text"],
+    input[type="password"],
+    input[type="number"],
+    select {
+      width: 100%;
+      margin-bottom: 12px;
+      padding: 10px;
+      border-radius: 6px;
+      background: #181c24;
+      color: #f5f6fa;
+      border: none;
+      font-size: 1.05rem;
+    }
     textarea {
       width: 100%;
       min-height: 120px;
@@ -172,7 +185,9 @@
       <b>Limits:</b> Max note length: 50,000 characters. Max file size: 50MB. Allowed file types: images, .txt files.<br>
       <span style="color:#b2bec3;font-size:0.97em;">All uploaded images are automatically stripped of metadata (EXIF, ICC, etc.) for privacy and anonymity.</span>
     </div>
+    <div id="toast" style="display:none;position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:#23283a;color:#f1c40f;padding:16px 32px;border-radius:8px;box-shadow:0 2px 8px #000a;font-weight:bold;z-index:1000;transition:opacity 0.3s,transform 0.3s;opacity:0;pointer-events:none;"></div>
     <form id="noteForm" enctype="multipart/form-data">
+      <input type="text" id="noteTitle" name="title" placeholder="Optional note title" maxlength="100" style="width:100%;margin-bottom:12px;padding:10px;border-radius:6px;background:#181c24;color:#f5f6fa;border:none;font-size:1.05rem;" />
       <textarea id="noteText" placeholder="Type your note here..." maxlength="50000"></textarea>
       <div id="dropZone" style="width:100%;padding:24px 0;margin-bottom:12px;border:2px dashed #f1c40f;border-radius:8px;background:#181c24;color:#f1c40f;text-align:center;cursor:pointer;transition:background 0.2s;">
         <span id="dropZoneText">Drag & drop file here or click to select</span>
@@ -189,7 +204,9 @@
       <button type="submit">Create note</button>
     </form>
     <div id="result"></div>
-    <div id="toast" style="display:none;position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:#23283a;color:#f1c40f;padding:16px 32px;border-radius:8px;box-shadow:0 2px 8px #000a;font-weight:bold;z-index:1000;transition:opacity 0.3s;opacity:0;"></div>
+    <div style="background:#23283a;color:#e67e22;padding:8px 14px;border-radius:8px;margin-bottom:14px;font-size:0.97rem;text-align:center;box-shadow:0 1px 4px #0002;max-width:420px;">
+      <b>Security:</b> Notes are protected from bots and search engines (Googlebot, etc.) – only real users can open them.
+    </div>
   </div>
   <footer style="width:100%;background:#23283a;color:#f1c40f;text-align:center;padding:24px 8px 16px 8px;font-size:1rem;margin-top:40px;letter-spacing:0.2px;">
     <div style="max-width:600px;margin:0 auto;">
@@ -214,13 +231,18 @@
 
     function showToast(msg, color = '#f1c40f') {
       const toast = document.getElementById('toast');
-      if (!toast) return; // Defensive: do nothing if toast element is missing
+      if (!toast) return;
       toast.textContent = msg;
       toast.style.background = '#23283a';
       toast.style.color = color;
       toast.style.display = 'block';
       toast.style.opacity = '1';
-      setTimeout(() => { toast.style.opacity = '0'; setTimeout(()=>{toast.style.display='none';}, 400); }, 2000);
+      toast.style.transform = 'translateX(-50%) scale(1.08)';
+      setTimeout(() => {
+        toast.style.transform = 'translateX(-50%) scale(1)';
+        toast.style.opacity = '0';
+        setTimeout(()=>{toast.style.display='none';}, 400);
+      }, 2000);
     }
 
     // Click on domain name redirects to homepage
@@ -244,6 +266,7 @@
         return;
       }
       const formData = new FormData();
+      formData.append('title', document.getElementById('noteTitle').value);
       formData.append('text', noteText.value);
       formData.append('expiry', document.getElementById('expirySelect').value);
       formData.append('password', document.getElementById('notePassword').value);
@@ -260,11 +283,15 @@
         if (data.url) {
           const fullUrl = window.location.origin + data.url;
           result.innerHTML = `<div class='note-link'>
-            <span id='copyLinkBtn' style='cursor:pointer;background:#f1c40f;color:#23283a;padding:6px 16px;border-radius:4px;font-weight:bold;display:inline-block;margin-bottom:8px;'>Copy link</span><br>
+            <span id='copyLinkBtn' style='cursor:pointer;background:#f1c40f;color:#23283a;padding:6px 16px;border-radius:4px;font-weight:bold;display:inline-block;margin-bottom:8px;transition:box-shadow 0.2s;'>Copy link</span><br>
             Copy this link and send it to the recipient: <br><a href='${data.url}'>${fullUrl}</a><br><br><img src='${data.qr}' alt='QR code' style='margin-top:10px;max-width:180px;background:#fff;padding:8px;border-radius:8px;'/></div>`;
           form.style.display = 'none';
           document.getElementById('copyLinkBtn').onclick = function() {
-            navigator.clipboard.writeText(fullUrl).then(()=>showToast('Link copied!','#2ecc40'),()=>showToast('Copy failed','#e74c3c'));
+            navigator.clipboard.writeText(fullUrl).then(()=>{
+              showToast('Link copied!','#2ecc40');
+              this.style.boxShadow = '0 0 0 4px #2ecc40';
+              setTimeout(()=>{this.style.boxShadow='none';}, 400);
+            },()=>showToast('Copy failed','#e74c3c'));
           };
           showToast('Note created!','#2ecc40');
         } else {
@@ -313,7 +340,8 @@
               }
             }
             let destroyedMsg = data.destroyed ? '<p><b>This note has now been destroyed.</b></p>' : '';
-            document.getElementById('main').innerHTML = `<h2>Note:</h2><div class='note-content'>${data.text ? data.text : ''}</div>${fileHtml}<div style='margin-top:12px;color:#f1c40f;'>Views: ${data.views} / ${data.burnAfterViews}</div>${destroyedMsg}`;
+            let titleHtml = data.title ? `<h2 style='color:#f1c40f;margin-bottom:10px;'>${data.title}</h2>` : '<h2>Note:</h2>';
+            document.getElementById('main').innerHTML = `${titleHtml}<div class='note-content'>${data.text ? data.text : ''}</div>${fileHtml}<div style='margin-top:12px;color:#f1c40f;'>Views: ${data.views} / ${data.burnAfterViews}</div>${destroyedMsg}`;
             showToast('Note loaded!','#2ecc40');
           } else {
             document.getElementById('main').innerHTML = `<h2>Error</h2><div class='error'>${data.error}</div>`;

@@ -202,7 +202,9 @@ app.post('/api/note', upload.single('file'), async (req, res) => {
     console.log('Reject: Note text too long');
     return res.status(400).json({ error: 'Note text exceeds 50,000 character limit' });
   }
+  const title = typeof req.body.title === 'string' ? req.body.title.slice(0, 100) : '';
   notes[id] = {
+    title,
     text,
     file,
     expires: getExpiryDate(expiry),
@@ -225,6 +227,11 @@ app.post('/api/note/:id/view', (req, res) => {
   const { id } = req.params;
   const { password } = req.body;
   const note = notes[id];
+  // Ochrona przed botami
+  const ua = (req.headers['user-agent'] || '').toLowerCase();
+  if (ua.includes('bot') || ua.includes('spider') || ua.includes('crawl')) {
+    return res.status(403).json({ error: 'Bots are not allowed to view notes.' });
+  }
   if (!note) {
     console.log('Note not found:', id);
     return res.status(404).json({ error: 'Note not found or already read' });
@@ -243,6 +250,7 @@ app.post('/api/note/:id/view', (req, res) => {
   }
   note.views++;
   const response = {
+    title: note.title || '',
     text: typeof note.text === 'string' ? note.text : '',
     file: note.file ? note.file : null,
     views: note.views,
