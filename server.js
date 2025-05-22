@@ -213,6 +213,9 @@ app.get('/adminpanel', (req, res) => {
 
 app.post('/api/admin/login', (req, res) => {
   const { login, password } = req.body;
+  console.log('Login attempt:', login, password);
+  console.log('Login hash:', crypto.createHash('sha1').update(login).digest('hex'));
+  console.log('Pass hash:', crypto.createHash('sha1').update(password).digest('hex'));
   if (checkAdmin(login, password)) {
     // Issue a simple session token (not secure, demo only)
     const token = crypto.randomBytes(32).toString('hex');
