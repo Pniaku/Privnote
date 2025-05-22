@@ -45,7 +45,7 @@ function getNanoid(len) {
 }
 
 // Create a new note (with file upload and expiry)
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } }); // 5MB max
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } }); // 50MB max
 
 app.post('/api/note', upload.single('file'), async (req, res) => {
   const text = typeof req.body.text === 'string' ? req.body.text : '';
@@ -68,6 +68,10 @@ app.post('/api/note', upload.single('file'), async (req, res) => {
   if (!text && !file) {
     console.log('Reject: Text or file is required');
     return res.status(400).json({ error: 'Text or file is required' });
+  }
+  if (text && text.length > 50000) {
+    console.log('Reject: Note text too long');
+    return res.status(400).json({ error: 'Note text exceeds 50,000 character limit' });
   }
   notes[id] = {
     text,

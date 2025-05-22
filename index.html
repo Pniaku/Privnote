@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Privpost.online</title>
+  <title>Privpost.online - Secure Self-Destructing Notes & File Sharing</title>
+  <meta name="description" content="Privpost.online lets you send confidential, self-destructing notes and files. Share sensitive information or attachments securely – your message is deleted after being read!" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
   <style>
     body {
@@ -123,6 +124,9 @@
       font-size: 1.1rem;
       box-shadow: 0 1px 6px #0003;
       text-align: center;
+      max-height: 400px;
+      overflow-y: auto;
+      word-break: break-word;
     }
     .error {
       color: #e74c3c;
@@ -156,9 +160,13 @@
     <span class="navbar-title" id="navbarTitle" style="cursor:pointer;">privpost.online</span>
   </div>
   <div class="container" id="main">
-    <h2>Create a one-time note</h2>
+    <h2>Send confidential, self-destructing notes and files</h2>
+    <p style="text-align:center;color:#b2bec3;margin-bottom:18px;max-width:420px;">Privpost.online allows you to securely send private messages and attachments that self-destruct after being read. Share passwords, sensitive info, or files with peace of mind – your note is deleted forever after the first view.</p>
+    <div style="background:#181c24;color:#f1c40f;padding:10px 16px;border-radius:8px;margin-bottom:18px;font-size:0.98rem;text-align:center;box-shadow:0 1px 4px #0002;max-width:420px;">
+      <b>Limits:</b> Max note length: 50,000 characters. Max file size: 50MB. Allowed file types: images, .txt files.
+    </div>
     <form id="noteForm" enctype="multipart/form-data">
-      <textarea id="noteText" placeholder="Type your note here..."></textarea>
+      <textarea id="noteText" placeholder="Type your note here..." maxlength="50000"></textarea>
       <input type="file" id="fileInput" name="file" accept="image/*,.txt" style="margin-bottom:12px; color:#f5f6fa;" />
       <select id="expirySelect" name="expiry" style="width:100%;margin-bottom:16px;padding:8px;border-radius:6px;background:#181c24;color:#f5f6fa;border:none;">
         <option value="1d" selected>Expires in 1 day (default)</option>
@@ -170,6 +178,11 @@
     <div id="result"></div>
     <div id="toast" style="display:none;position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:#23283a;color:#f1c40f;padding:16px 32px;border-radius:8px;box-shadow:0 2px 8px #000a;font-weight:bold;z-index:1000;transition:opacity 0.3s;opacity:0;"></div>
   </div>
+  <footer style="width:100%;background:#23283a;color:#f1c40f;text-align:center;padding:24px 8px 16px 8px;font-size:1rem;margin-top:40px;letter-spacing:0.2px;">
+    <div style="max-width:600px;margin:0 auto;">
+      <b>Privpost.online</b> is a free tool for sending confidential, one-time notes and files. Your message or attachment is destroyed after being read, ensuring maximum privacy. Perfect for sharing passwords, private links, or sensitive documents. No registration required – just create, send, and let your secret vanish!
+    </div>
+  </footer>
   <script>
     const form = document.getElementById('noteForm');
     const noteText = document.getElementById('noteText');
@@ -194,6 +207,14 @@
 
     form && form.addEventListener('submit', function(e) {
       e.preventDefault();
+      if (noteText.value.length > 50000) {
+        showToast('Note text exceeds 50,000 character limit', '#e74c3c');
+        return;
+      }
+      if (fileInput.files[0] && fileInput.files[0].size > 50 * 1024 * 1024) {
+        showToast('File exceeds 50MB limit', '#e74c3c');
+        return;
+      }
       const formData = new FormData();
       formData.append('text', noteText.value);
       formData.append('expiry', document.getElementById('expirySelect').value);
