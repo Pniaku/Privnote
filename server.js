@@ -81,19 +81,32 @@ function getExpiryDate(option) {
   }
 }
 
-// Middleware: zliczaj wejścia na stronę główną i podstrony SEO (GET /, /index.html, /about, /about.html, ...), nie adminpanel
-app.use((req, res, next) => {
-  const seoBase = ['/', '/index', '/about', '/faq', '/privacy', '/terms', '/contact'];
-  if (
-    req.method === 'GET' &&
-    seoBase.some(base => req.path === base || req.path === base + '.html') &&
-    !req.path.startsWith('/adminpanel') &&
-    !req.path.startsWith('/api/admin')
-  ) {
-    addVisit();
-    console.log('Zliczono wejście na stronę:', req.path);
-  }
-  next();
+// Middleware: zliczaj wejścia tylko na stronie głównej (GET /, /index, /index.html)
+app.get(['/', '/index', '/index.html'], (req, res) => {
+  addVisit();
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Podstrony SEO: about, faq, privacy, terms, contact (zliczanie wejść dla .html i bez)
+app.get(['/about', '/about.html'], (req, res) => {
+  addVisit();
+  res.sendFile(path.join(__dirname, 'about.html'));
+});
+app.get(['/faq', '/faq.html'], (req, res) => {
+  addVisit();
+  res.sendFile(path.join(__dirname, 'faq.html'));
+});
+app.get(['/privacy', '/privacy.html'], (req, res) => {
+  addVisit();
+  res.sendFile(path.join(__dirname, 'privacy.html'));
+});
+app.get(['/terms', '/terms.html'], (req, res) => {
+  addVisit();
+  res.sendFile(path.join(__dirname, 'terms.html'));
+});
+app.get(['/contact', '/contact.html'], (req, res) => {
+  addVisit();
+  res.sendFile(path.join(__dirname, 'contact.html'));
 });
 
 app.use(express.static(__dirname));
