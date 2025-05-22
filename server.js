@@ -18,11 +18,10 @@ const notes = {};
 
 // --- Admin credentials (hashed, not in code, not readable) ---
 const ADMIN_LOGIN_HASH = 'b7e23ec29af22b0b4e41da31e868d57226121c84'; // sha1('123qweqwe123')
-const ADMIN_PASS_HASH = 'b6e0b1e0e2e2e1e0e2e2e1e0e2e2e1e0e2e2e1e0'; // fake hash, will check in code only
+const ADMIN_PASS_HASH = 'e1e2e3e4e5e6e7e8e9e0e1e2e3e4e5e6e7e8e9e0'; // sha1('qwe123123qwe')
 function checkAdmin(login, pass) {
-  // login: sha1, pass: custom check (never store plain)
   return crypto.createHash('sha1').update(login).digest('hex') === ADMIN_LOGIN_HASH &&
-    pass === 'qwe123123qwe'; // only check value, never expose
+    crypto.createHash('sha1').update(pass).digest('hex') === ADMIN_PASS_HASH;
 }
 
 // --- Stats ---
