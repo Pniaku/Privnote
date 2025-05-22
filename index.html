@@ -5,18 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Privpost.online - Secure Self-Destructing Notes & File Sharing</title>
   <meta name="description" content="Privpost.online lets you send confidential, self-destructing notes and files. Share sensitive information or attachments securely – your message is deleted after being read!" />
-  <meta property="og:title" content="Privpost.online - Secure Self-Destructing Notes & File Sharing" />
-  <meta property="og:description" content="Send confidential, self-destructing notes and files. Share sensitive information or attachments securely – your message is deleted after being read!" />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://privpost.online/" />
-  <meta property="og:image" content="https://privpost.online/favicon.png" />
-  <meta property="og:site_name" content="Privpost.online" />
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Privpost.online - Secure Self-Destructing Notes & File Sharing" />
-  <meta name="twitter:description" content="Send confidential, self-destructing notes and files. Share sensitive information or attachments securely – your message is deleted after being read!" />
-  <meta name="twitter:image" content="https://privpost.online/favicon.png" />
-  <meta name="keywords" content="privnote, privpost, self-destructing note, one-time note, secure note, confidential file, burn after reading, private message, password sharing, secret link" />
-  <meta name="author" content="Privpost.online" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="/favicon.png">
   <style>
@@ -181,10 +169,7 @@
     </div>
     <form id="noteForm" enctype="multipart/form-data">
       <textarea id="noteText" placeholder="Type your note here..." maxlength="50000"></textarea>
-      <div id="dropZone" style="width:100%;padding:24px 0;margin-bottom:12px;border:2px dashed #f1c40f;border-radius:8px;background:#181c24;color:#f1c40f;text-align:center;cursor:pointer;transition:background 0.2s;">
-        <span id="dropZoneText">Drag & drop file here or click to select</span>
-        <input type="file" id="fileInput" name="file" accept="image/*,.txt" style="display:none;" />
-      </div>
+      <input type="file" id="fileInput" name="file" accept="image/*,.txt" style="margin-bottom:12px; color:#f5f6fa;" />
       <input type="password" id="notePassword" name="password" placeholder="Optional password (for reading)" style="width:100%;margin-bottom:12px;padding:10px;border-radius:6px;background:#181c24;color:#f5f6fa;border:none;" />
       <label for="burnAfterViews" style="color:#f1c40f;font-size:0.98rem;margin-bottom:8px;">Destroy after <span id="burnAfterViewsLabel">1</span> view(s) (max 10,000)</label>
       <input type="number" id="burnAfterViews" name="burnAfterViews" min="1" max="10000" value="1" style="width:100%;margin-bottom:12px;padding:10px;border-radius:6px;background:#181c24;color:#f5f6fa;border:none;" />
@@ -201,13 +186,6 @@
   <footer style="width:100%;background:#23283a;color:#f1c40f;text-align:center;padding:24px 8px 16px 8px;font-size:1rem;margin-top:40px;letter-spacing:0.2px;">
     <div style="max-width:600px;margin:0 auto;">
       <b>Privpost.online</b> is a free tool for sending confidential, one-time notes and files. Your message or attachment is destroyed after being read, ensuring maximum privacy. Perfect for sharing passwords, private links, or sensitive documents. No registration required – just create, send, and let your secret vanish!
-    </div>
-    <div style="margin-top:18px;font-size:0.98rem;">
-      <a href="about.html" style="color:#f1c40f;margin:0 10px;">About</a>|
-      <a href="faq.html" style="color:#f1c40f;margin:0 10px;">FAQ</a>|
-      <a href="privacy.html" style="color:#f1c40f;margin:0 10px;">Privacy Policy</a>|
-      <a href="terms.html" style="color:#f1c40f;margin:0 10px;">Terms</a>|
-      <a href="contact.html" style="color:#f1c40f;margin:0 10px;">Contact</a>
     </div>
   </footer>
   <script>
@@ -334,33 +312,6 @@
       }
       fetchNote();
     }
-
-    // DRAG & DROP obsługa
-    const dropZone = document.getElementById('dropZone');
-    dropZone.addEventListener('click', () => fileInput.click());
-    dropZone.addEventListener('dragover', e => {
-      e.preventDefault();
-      dropZone.style.background = '#23283a';
-    });
-    dropZone.addEventListener('dragleave', e => {
-      e.preventDefault();
-      dropZone.style.background = '#181c24';
-    });
-    dropZone.addEventListener('drop', e => {
-      e.preventDefault();
-      dropZone.style.background = '#181c24';
-      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        fileInput.files = e.dataTransfer.files;
-        document.getElementById('dropZoneText').textContent = 'Selected: ' + e.dataTransfer.files[0].name;
-      }
-    });
-    fileInput.addEventListener('change', e => {
-      if (fileInput.files && fileInput.files.length > 0) {
-        document.getElementById('dropZoneText').textContent = 'Selected: ' + fileInput.files[0].name;
-      } else {
-        document.getElementById('dropZoneText').textContent = 'Drag & drop file here or click to select';
-      }
-    });
   </script>
 </body>
 </html>

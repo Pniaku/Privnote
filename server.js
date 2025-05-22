@@ -2,70 +2,16 @@ const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const QRCode = require('qrcode');
-const crypto = require('crypto');
-const fs = require('fs');
-const path = require('path');
-const { nanoid } = require('nanoid');
 
 const app = express();
 const PORT = 4000;
 
 app.use(cors());
 app.use(express.json());
+app.use(express.static(__dirname));
 
 // In-memory store for notes
 const notes = {};
-
-// --- Admin credentials (hashed, not in code, not readable) ---
-const ADMIN_LOGIN = '123qweqwe123';
-const ADMIN_PASS = 'qwe123123qwe';
-function checkAdmin(login, pass) {
-  return login === ADMIN_LOGIN && pass === ADMIN_PASS;
-}
-
-// --- Stats ---
-const STATS_FILE = path.join(__dirname, 'stats.json');
-let stats = {
-  visits: [], // {date: 'YYYY-MM-DD', count: N}
-  notesCreated: 0,
-  notesDestroyed: 0,
-  notesExpired: 0
-};
-// Wczytaj statystyki z pliku przy starcie
-try {
-  if (fs.existsSync(STATS_FILE)) {
-    const raw = fs.readFileSync(STATS_FILE, 'utf8');
-    if (raw && raw.trim().length > 0) {
-      stats = JSON.parse(raw);
-    } else {
-      // Plik pusty, nadpisz domyślnymi statystykami
-      fs.writeFileSync(STATS_FILE, JSON.stringify(stats));
-    }
-  }
-} catch (e) {
-  console.error('Błąd wczytywania statystyk:', e);
-  // Nadpisz plik domyślnymi statystykami jeśli błąd
-  try { fs.writeFileSync(STATS_FILE, JSON.stringify(stats)); } catch (e2) {}
-}
-function saveStats() {
-  try {
-    fs.writeFileSync(STATS_FILE, JSON.stringify(stats));
-  } catch (e) {
-    console.error('Błąd zapisu statystyk:', e);
-  }
-}
-function addVisit() {
-  const today = new Date().toISOString().slice(0, 10);
-  let entry = stats.visits.find(v => v.date === today);
-  if (!entry) {
-    entry = { date: today, count: 0 };
-    stats.visits.push(entry);
-    // keep only last 14 days
-    stats.visits = stats.visits.slice(-14);
-  }
-  entry.count++;
-  saveStats();
-}
 
 // Helper: parse expiry
 function getExpiryDate(option) {
@@ -82,63 +28,33 @@ function getExpiryDate(option) {
   }
 }
 
-// Middleware: zliczaj wejścia tylko na stronę główną (GET / lub GET /index.html), nie adminpanel
+// Middleware: log every request
 app.use((req, res, next) => {
-  if (
-    req.method === 'GET' &&
-    (req.path === '/' || req.path === '/index.html') &&
-    !req.path.startsWith('/adminpanel') &&
-    !req.path.startsWith('/api/admin')
-  ) {
-    addVisit();
-    console.log('Zliczono wejście na stronę główną:', req.path);
-  }
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   next();
 });
 
-app.use(express.static(__dirname));
-
+// --- nanoid dynamic import fix for ESM ---
+let nanoid;
+(async () => {
+  const { nanoid: _nanoid } = await import('nanoid');
+  nanoid = _nanoid;
+})();
 function getNanoid(len) {
+  if (!nanoid) throw new Error('nanoid not loaded');
   return nanoid(len);
 }
 
 // Helper: hash password (simple, not for production)
+const crypto = require('crypto');
 function hashPassword(pw) {
   return crypto.createHash('sha256').update(pw).digest('hex');
 }
-
-// --- Limit notatek na IP (antyspam) ---
-const NOTE_LIMIT_PER_IP = 100;
-const NOTE_LIMIT_WINDOW_HOURS = 12;
-const ipNoteCounters = {};
-function cleanupIpCounters() {
-  const now = Date.now();
-  for (const ip in ipNoteCounters) {
-    if (now - ipNoteCounters[ip].start > NOTE_LIMIT_WINDOW_HOURS * 60 * 60 * 1000) {
-      delete ipNoteCounters[ip];
-    }
-  }
-}
-setInterval(cleanupIpCounters, 60 * 60 * 1000); // czyść co godzinę
 
 // Create a new note (with file upload, expiry, password, burn-after-views)
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } }); // 50MB max
 
 app.post('/api/note', upload.single('file'), async (req, res) => {
-  // Limit notatek na IP
-  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.connection.remoteAddress || req.ip;
-  let counter = ipNoteCounters[ip];
-  const now = Date.now();
-  if (!counter || now - counter.start > NOTE_LIMIT_WINDOW_HOURS * 60 * 60 * 1000) {
-    // resetuj licznik dla IP po 12h
-    counter = { count: 0, start: now };
-    ipNoteCounters[ip] = counter;
-  }
-  if (counter.count >= NOTE_LIMIT_PER_IP) {
-    return res.status(429).json({ error: `Note limit reached: max ${NOTE_LIMIT_PER_IP} notes per 12h per IP. Try again later.` });
-  }
-  counter.count++;
-
   const text = typeof req.body.text === 'string' ? req.body.text : '';
   const expiry = req.body.expiry || '1d';
   const password = req.body.password ? req.body.password : null;
@@ -181,8 +97,6 @@ app.post('/api/note', upload.single('file'), async (req, res) => {
   const fullUrl = req.protocol + '://' + req.get('host') + url;
   const qr = await QRCode.toDataURL(fullUrl);
   console.log('Note created:', { id, text, file: file ? { ...file, buffer: '[base64]' } : null, burnAfterViews });
-  stats.notesCreated++;
-  saveStats();
   res.json({ url, qr });
 });
 
@@ -217,8 +131,6 @@ app.post('/api/note/:id/view', (req, res) => {
   if (note.views >= note.burnAfterViews) {
     delete notes[id];
     response.destroyed = true;
-    stats.notesDestroyed++;
-    saveStats();
   }
   res.json(response);
 });
@@ -240,10 +152,6 @@ app.get('/note/:id', (req, res) => {
   res.sendFile(__dirname + '/index.html');
 });
 
-// Sitemap and robots.txt
-app.get('/sitemap.xml', (req, res) => res.sendFile(path.join(__dirname, 'sitemap.xml')));
-app.get('/robots.txt', (req, res) => res.sendFile(path.join(__dirname, 'robots.txt')));
-
 // Cleanup expired notes every 5 minutes
 setInterval(() => {
   const now = new Date();
@@ -253,8 +161,6 @@ setInterval(() => {
     if (!(expires instanceof Date)) expires = new Date(expires);
     if (isNaN(expires.getTime()) || expires < now) {
       delete notes[id];
-      stats.notesExpired++;
-      saveStats();
     }
   }
 }, 5 * 60 * 1000);
@@ -265,46 +171,6 @@ process.on('uncaughtException', (err) => {
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection:', reason);
 });
-
-// --- Admin panel ---
-app.get('/adminpanel', (req, res) => {
-  res.sendFile(path.join(__dirname, 'adminpanel.html'));
-});
-
-app.post('/api/admin/login', (req, res) => {
-  const { login, password } = req.body;
-  console.log('Login attempt:', login, password);
-  if (checkAdmin(login, password)) {
-    // Issue a simple session token (not secure, demo only)
-    const token = crypto.randomBytes(32).toString('hex');
-    adminSessions[token] = Date.now();
-    res.json({ token });
-  } else {
-    res.status(401).json({ error: 'Invalid credentials' });
-  }
-});
-
-const adminSessions = {};
-function isAdmin(req) {
-  const token = req.headers['x-admin-token'];
-  return token && adminSessions[token];
-}
-
-app.get('/api/admin/stats', (req, res) => {
-  if (!isAdmin(req)) return res.status(401).json({ error: 'Unauthorized' });
-  res.json({
-    visits: stats.visits,
-    notesCreated: stats.notesCreated,
-    notesDestroyed: stats.notesDestroyed,
-    notesExpired: stats.notesExpired
-  });
-});
-
-app.get('/about', (req, res) => res.sendFile(path.join(__dirname, 'about.html')));
-app.get('/faq', (req, res) => res.sendFile(path.join(__dirname, 'faq.html')));
-app.get('/privacy', (req, res) => res.sendFile(path.join(__dirname, 'privacy.html')));
-app.get('/terms', (req, res) => res.sendFile(path.join(__dirname, 'terms.html')));
-app.get('/contact', (req, res) => res.sendFile(path.join(__dirname, 'contact.html')));
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
