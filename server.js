@@ -87,7 +87,7 @@ app.use((req, res, next) => {
   // Zliczaj każde wejście GET na stronę HTML, ale NIE adminpanel
   if (
     req.method === 'GET' &&
-    req.headers.accept && req.headers.accept.includes('text/html') &&
+    (req.path === '/' || req.path === '/index.html') &&
     !req.path.startsWith('/adminpanel') &&
     !req.path.startsWith('/api/admin')
   ) {
