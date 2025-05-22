@@ -11,7 +11,6 @@ const PORT = 4000;
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(__dirname));
 
 // In-memory store for notes
 const notes = {};
@@ -82,9 +81,8 @@ function getExpiryDate(option) {
   }
 }
 
-// Middleware: log every request
+// Middleware: zliczaj wejścia tylko na stronę główną (GET / lub GET /index.html), nie adminpanel
 app.use((req, res, next) => {
-  // Zliczaj każde wejście GET na stronę HTML, ale NIE adminpanel
   if (
     req.method === 'GET' &&
     (req.path === '/' || req.path === '/index.html') &&
@@ -92,9 +90,12 @@ app.use((req, res, next) => {
     !req.path.startsWith('/api/admin')
   ) {
     addVisit();
+    console.log('Zliczono wejście na stronę główną:', req.path);
   }
   next();
 });
+
+app.use(express.static(__dirname));
 
 // --- nanoid dynamic import fix for ESM ---
 let nanoid;
