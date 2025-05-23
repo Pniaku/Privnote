@@ -1,2 +1,6 @@
 User-agent: *
 Allow: /
+Disallow: /adminpanel
+Disallow: /api/
+Disallow: /note/
+Sitemap: https://privpost.online/sitemap.xml
