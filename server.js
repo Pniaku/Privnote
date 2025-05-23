@@ -13,6 +13,15 @@ const PORT = 4000;
 app.use(cors());
 app.use(express.json());
 
+// --- WWW to non-WWW redirect middleware ---
+app.use((req, res, next) => {
+  if (req.headers.host && req.headers.host.startsWith('www.')) {
+    const newHost = req.headers.host.replace(/^www\./, '');
+    return res.redirect(301, req.protocol + '://' + newHost + req.originalUrl);
+  }
+  next();
+});
+
 // In-memory store for notes
 const notes = {};
 
