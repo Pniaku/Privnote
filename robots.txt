@@ -3,4 +3,5 @@ Allow: /
 Disallow: /adminpanel
 Disallow: /api/
 Disallow: /note/
+Allow: /donate.html
 Sitemap: https://privpost.online/sitemap.xml

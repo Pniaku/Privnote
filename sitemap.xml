@@ -24,4 +24,8 @@
     <loc>https://privpost.online/contact.html</loc>
     <priority>0.7</priority>
   </url>
+  <url>
+    <loc>https://privpost.online/donate.html</loc>
+    <priority>0.7</priority>
+  </url>
 </urlset>

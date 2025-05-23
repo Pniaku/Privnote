@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Donate - Privpost.online</title>
+  <meta name="description" content="Support Privpost.online - donate with crypto if you appreciate this free, secure, self-destructing notes tool." />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
+  <style>html{overflow-x:hidden;}body{background:#181c24;color:#f5f6fa;font-family:Arial,sans-serif;margin:0;padding:0;overflow-x:hidden;} .navbar{width:100%;background:#23283a;padding:0.7rem 0;box-shadow:0 2px 8px #0003;display:flex;align-items:center;justify-content:center;position:sticky;top:0;z-index:10;} .navbar-title{font-family:'Orbitron',Arial,sans-serif;font-size:2rem;color:#f1c40f;letter-spacing:2px;text-shadow:0 2px 8px #0008;user-select:none;cursor:pointer;} .container{max-width:700px;margin:48px auto 0 auto;background:#23283a;border-radius:12px;box-shadow:0 4px 24px #0005;padding:40px 24px 32px 24px;box-sizing:border-box;} h1{color:#f1c40f;text-align:center;} h2{color:#f1c40f;} a{color:#f1c40f;} .crypto-box{background:#181c24;border-radius:8px;margin:24px 0;padding:18px 16px;font-size:1.08rem;color:#f1c40f;box-shadow:0 1px 4px #0002;display:flex;flex-direction:column;align-items:center;} .crypto-label{font-weight:bold;font-size:1.1rem;margin-bottom:8px;} .crypto-addr{word-break:break-all;font-size:1.05rem;margin-bottom:10px;} .copy-btn{background:#f1c40f;color:#23283a;border:none;padding:7px 18px;border-radius:6px;font-weight:bold;cursor:pointer;margin-bottom:10px;transition:box-shadow 0.2s;} .copy-btn:hover{box-shadow:0 0 0 4px #2ecc40;} .qr-img{margin-top:8px;max-width:140px;background:#fff;padding:8px;border-radius:8px;} @media(max-width:600px){.container{max-width:98vw;margin:24px 1vw 0 1vw;padding:20px 4vw 16px 4vw;}.navbar-title{font-size:1.3rem;}}</style>
+</head>
+<body>
+  <div class="navbar">
+    <span class="navbar-title" id="navbarTitle">privpost.online</span>
+  </div>
+  <div class="container">
+    <h1>Support & Donate</h1>
+    <p style="color:#b2bec3;text-align:center;max-width:600px;margin:0 auto 18px auto;">If you appreciate my work and the free tools I provide at Privpost.online, you can support further development and server costs with a crypto donation. Every contribution, no matter how small, is greatly appreciated and helps keep this project alive and ad-free. Thank you for your support!</p>
+    <div class="crypto-box">
+      <div class="crypto-label">Bitcoin (BTC)</div>
+      <div class="crypto-addr" id="btcAddr">bc1qqnkl8crjgrrm9tfjnv9vwsrqdgg7uwm2fgp6c0</div>
+      <button class="copy-btn" onclick="copyCrypto('btcAddr')">Copy</button>
+      <img class="qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=bc1qqnkl8crjgrrm9tfjnv9vwsrqdgg7uwm2fgp6c0" alt="BTC QR">
+    </div>
+    <div class="crypto-box">
+      <div class="crypto-label">Litecoin (LTC)</div>
+      <div class="crypto-addr" id="ltcAddr">ltc1qfj4ld9705f6ctjmm8lh9k5sldv3xrg3vwd7pxt</div>
+      <button class="copy-btn" onclick="copyCrypto('ltcAddr')">Copy</button>
+      <img class="qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=ltc1qfj4ld9705f6ctjmm8lh9k5sldv3xrg3vwd7pxt" alt="LTC QR">
+    </div>
+    <div class="crypto-box">
+      <div class="crypto-label">Solana (SOL)</div>
+      <div class="crypto-addr" id="solAddr">FMh1LreVAagYLxw3MAXdHjQ4Q5Lq3MVCuuN9nVjyhp7b</div>
+      <button class="copy-btn" onclick="copyCrypto('solAddr')">Copy</button>
+      <img class="qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=FMh1LreVAagYLxw3MAXdHjQ4Q5Lq3MVCuuN9nVjyhp7b" alt="SOL QR">
+    </div>
+    <div class="crypto-box">
+      <div class="crypto-label">Dogecoin (DOGE)</div>
+      <div class="crypto-addr" id="dogeAddr">D9XxddVViRSjdT4BFy3Wx29TCQ8kXMTPQM</div>
+      <button class="copy-btn" onclick="copyCrypto('dogeAddr')">Copy</button>
+      <img class="qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=D9XxddVViRSjdT4BFy3Wx29TCQ8kXMTPQM" alt="DOGE QR">
+    </div>
+    <div id="donateToast" style="display:none;position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:#23283a;color:#f1c40f;padding:16px 32px;border-radius:8px;box-shadow:0 2px 8px #000a;font-weight:bold;z-index:1000;transition:opacity 0.3s,transform 0.3s;opacity:0;pointer-events:none;"></div>
+  </div>
+  <footer style="width:100%;background:#23283a;color:#f1c40f;text-align:center;padding:24px 8px 16px 8px;font-size:1rem;margin-top:40px;letter-spacing:0.2px;">
+    <div style="max-width:600px;margin:0 auto;">
+      <b>Privpost.online</b> is a free tool for sending confidential, one-time notes and files. Your message or attachment is destroyed after being read, ensuring maximum privacy. Perfect for sharing passwords, private links, or sensitive documents. No registration required – just create, send, and let your secret vanish!
+    </div>
+    <div style="margin-top:18px;font-size:0.98rem;">
+      <a href="about.html" style="color:#f1c40f;margin:0 10px;">About</a>|
+      <a href="faq.html" style="color:#f1c40f;margin:0 10px;">FAQ</a>|
+      <a href="privacy.html" style="color:#f1c40f;margin:0 10px;">Privacy Policy</a>|
+      <a href="terms.html" style="color:#f1c40f;margin:0 10px;">Terms</a>|
+      <a href="contact.html" style="color:#f1c40f;margin:0 10px;">Contact</a>|
+      <a href="donate.html" style="color:#f1c40f;margin:0 10px;font-weight:bold;">Donate</a>
+    </div>
+  </footer>
+  <script>
+    document.getElementById('navbarTitle').onclick=function(){window.location.href='/';};
+    function copyCrypto(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      navigator.clipboard.writeText(el.textContent).then(()=>{
+        showDonateToast('Address copied!','#2ecc40');
+      },()=>showDonateToast('Copy failed','#e74c3c'));
+    }
+    function showDonateToast(msg, color = '#f1c40f') {
+      const toast = document.getElementById('donateToast');
+      if (!toast) return;
+      toast.textContent = msg;
+      toast.style.background = '#23283a';
+      toast.style.color = color;
+      toast.style.display = 'block';
+      toast.style.opacity = '1';
+      toast.style.transform = 'translateX(-50%) scale(1.08)';
+      setTimeout(() => {
+        toast.style.transform = 'translateX(-50%) scale(1)';
+        toast.style.opacity = '0';
+        setTimeout(()=>{toast.style.display='none';}, 400);
+      }, 1800);
+    }
+  </script>
+</body>
+</html>

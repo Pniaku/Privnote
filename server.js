@@ -118,6 +118,10 @@ app.get(['/contact', '/contact.html'], (req, res) => {
   addVisit();
   res.sendFile(path.join(__dirname, 'contact.html'));
 });
+app.get(['/donate', '/donate.html'], (req, res) => {
+  addVisit();
+  res.sendFile(path.join(__dirname, 'donate.html'));
+});
 
 app.use(express.static(__dirname));
 
